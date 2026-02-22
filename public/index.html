@@ -8,7 +8,7 @@ body {
     color: white;
     font-family: Arial;
     text-align: center;
-    margin-top: 100px;
+    margin-top: 60px;
 }
 
 button {
@@ -17,39 +17,42 @@ button {
     cursor: pointer;
 }
 
-#result {
+#card {
     margin-top: 40px;
-    font-size: 28px;
+}
+
+img {
+    width: 150px;
+    height: 150px;
+    border-radius: 10px;
 }
 
 #rarity {
-    position: fixed;
-    right: 30px;
-    top: 50%;
-    transform: translateY(-50%);
     font-size: 22px;
+    margin-top: 10px;
 }
 </style>
 </head>
 <body>
 
 <h1>🎲 Roblox UserID Roller</h1>
-
 <button onclick="roll()">ROLL</button>
 
-<div id="result"></div>
-<div id="rarity"></div>
+<div id="card"></div>
 
 <script>
 async function roll() {
     const res = await fetch("/roll");
     const data = await res.json();
 
-    document.getElementById("result").innerText = "UserID: " + data.id;
-
-    const rarityDiv = document.getElementById("rarity");
-    rarityDiv.innerText = data.rarity;
-    rarityDiv.style.color = data.color;
+    document.getElementById("card").innerHTML = `
+        <h2>ROLLED:</h2>
+        <img src="${data.avatar}">
+        <h3>#${data.id} ${data.name}</h3>
+        <div id="rarity" style="color:${data.color}">
+            ${data.rarity}
+        </div>
+    `;
 }
 </script>
 
