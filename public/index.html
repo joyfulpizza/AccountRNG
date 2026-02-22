@@ -7,53 +7,135 @@ body {
     background: #111;
     color: white;
     font-family: Arial;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+#leaderboard {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 220px;
+    height: 100%;
+    background: #1a1a1a;
+    padding: 15px;
+}
+
+#main {
+    margin-left: 240px;
     text-align: center;
     margin-top: 60px;
 }
 
 button {
-    padding: 15px 40px;
-    font-size: 20px;
+    padding: 12px 30px;
+    font-size: 18px;
     cursor: pointer;
 }
 
-#card {
-    margin-top: 40px;
+input {
+    padding: 8px;
+    font-size: 16px;
 }
 
 img {
     width: 150px;
-    height: 150px;
     border-radius: 10px;
 }
 
-#rarity {
-    font-size: 22px;
-    margin-top: 10px;
+#rolling {
+    font-size: 28px;
+    margin: 20px;
 }
 </style>
 </head>
 <body>
 
-<h1>🎲 Roblox UserID Roller</h1>
-<button onclick="roll()">ROLL</button>
+<div id="leaderboard">
+    <h3>🏆 All Time</h3>
+    <div id="board"></div>
+</div>
 
-<div id="card"></div>
+<div id="main">
+    <h1>🎰 UserID Slot Roller</h1>
+
+    <input id="nickname" placeholder="Enter nickname">
+    <button onclick="roll()">ROLL</button>
+
+    <div id="rolling"></div>
+    <div id="result"></div>
+</div>
 
 <script>
-async function roll() {
-    const res = await fetch("/roll");
+
+function saveNickname() {
+    const nick = document.getElementById("nickname").value;
+    localStorage.setItem("nickname", nick);
+}
+
+function loadNickname() {
+    const saved = localStorage.getItem("nickname");
+    if (saved) document.getElementById("nickname").value = saved;
+}
+
+async function updateLeaderboard() {
+    const res = await fetch("/leaderboard");
     const data = await res.json();
 
-    document.getElementById("card").innerHTML = `
-        <h2>ROLLED:</h2>
-        <img src="${data.avatar}">
-        <h3>#${data.id} ${data.name}</h3>
-        <div id="rarity" style="color:${data.color}">
-            ${data.rarity}
-        </div>
-    `;
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+
+    data.forEach((p, i) => {
+        board.innerHTML += `
+            <div>${i+1}. ${p.nickname} - ${p.rarity}</div>
+        `;
+    });
 }
+
+async function roll() {
+    const nickname = document.getElementById("nickname").value;
+    if (!nickname) return alert("Enter nickname first");
+
+    saveNickname();
+
+    const rollingDiv = document.getElementById("rolling");
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
+
+    // Slot animation
+    let counter = 0;
+    const interval = setInterval(() => {
+        rollingDiv.innerText = "#" + Math.floor(Math.random() * 999999999);
+        counter++;
+        if (counter > 20) clearInterval(interval);
+    }, 50);
+
+    setTimeout(async () => {
+        const res = await fetch("/roll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nickname })
+        });
+
+        const data = await res.json();
+        rollingDiv.innerText = "";
+
+        resultDiv.innerHTML = `
+            <h2>ROLLED:</h2>
+            <img src="${data.avatar}">
+            <h3>#${data.id} ${data.name}</h3>
+            <div style="color:${data.color}; font-size:22px;">
+                ${data.rarity}
+            </div>
+        `;
+
+        updateLeaderboard();
+    }, 1200);
+}
+
+loadNickname();
+updateLeaderboard();
+
 </script>
 
 </body>
