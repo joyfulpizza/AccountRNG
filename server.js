@@ -19,12 +19,7 @@ function saveCache(data) {
 }
 
 async function fetchLatestUserId() {
-    // Simple high probe
-    const testId = 10000000000;
-    try {
-        const res = await fetch(`https://users.roblox.com/v1/users/${testId}`);
-        if (res.status === 200) return testId;
-    } catch {}
+    // Safe high guess
     return 6000000000;
 }
 
@@ -61,13 +56,48 @@ function getRarity(id) {
     return { name: "COMMON", color: "gray" };
 }
 
+// Fetch user info
+async function getUserData(userId) {
+    try {
+        const userRes = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+        if (userRes.status !== 200) return null;
+
+        const userData = await userRes.json();
+
+        const avatarRes = await fetch(
+            `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`
+        );
+
+        const avatarData = await avatarRes.json();
+        const avatarUrl = avatarData.data[0].imageUrl;
+
+        return {
+            name: userData.name,
+            avatar: avatarUrl
+        };
+    } catch {
+        return null;
+    }
+}
+
 app.get("/roll", async (req, res) => {
     const maxUserId = await getMaxUserId();
-    const rolledId = Math.floor(Math.random() * maxUserId) + 1;
+
+    let userData = null;
+    let rolledId;
+
+    // Keep rolling until valid user found
+    while (!userData) {
+        rolledId = Math.floor(Math.random() * maxUserId) + 1;
+        userData = await getUserData(rolledId);
+    }
+
     const rarity = getRarity(rolledId);
 
     res.json({
         id: rolledId,
+        name: userData.name,
+        avatar: userData.avatar,
         rarity: rarity.name,
         color: rarity.color
     });
